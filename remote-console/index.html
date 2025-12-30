@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>远端站控台 · 智能储能监控</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand__title">远端服务器控制台</div>
+          <div class="brand__sub">AGC / AVC / 手动功率 · 跨页面控制就地监控</div>
+        </div>
+        <div class="status">
+          <div class="pill" id="connPill">CONNECTING</div>
+          <div class="meta">
+            <div class="meta__row">
+              <span class="k">刷新</span>
+              <span class="v" id="refreshLabel">--</span>
+            </div>
+            <div class="meta__row">
+              <span class="k">后端</span>
+              <a class="v link" href="/api/health" target="_blank" rel="noreferrer">/api/health</a>
+            </div>
+            <div class="meta__row">
+              <span class="k">就地</span>
+              <a class="v link" id="localMonitorLink" href="#" target="_blank" rel="noreferrer"
+                >打开就地监控</a
+              >
+            </div>
+            <div class="meta__row">
+              <span class="k">用户</span>
+              <span class="v" id="userLabel">--</span>
+              <button class="btn btn--ghost btn--mini" id="logoutBtn" type="button">退出</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="panel panel--glass">
+          <div class="panel__head">
+            <div>
+              <div class="panel__title">就地电站实时概览</div>
+              <div class="panel__sub">来自 /api/* 的最新快照（5s 生成）</div>
+            </div>
+            <div class="chip" id="sysStatusChip">--</div>
+          </div>
+
+          <div class="cards">
+            <div class="card">
+              <div class="card__k">实时功率</div>
+              <div class="card__v"><span id="powerKw">--</span> <span class="u">kW</span></div>
+              <div class="card__s" id="powerHint">--</div>
+            </div>
+            <div class="card">
+              <div class="card__k">系统电压</div>
+              <div class="card__v"><span id="voltageV">--</span> <span class="u">V</span></div>
+              <div class="card__s">平均电压</div>
+            </div>
+            <div class="card">
+              <div class="card__k">系统电流</div>
+              <div class="card__v"><span id="currentA">--</span> <span class="u">A</span></div>
+              <div class="card__s">总电流</div>
+            </div>
+            <div class="card">
+              <div class="card__k">SOC</div>
+              <div class="card__v"><span id="socPct">--</span> <span class="u">%</span></div>
+              <div class="bar"><div class="bar__fill" id="socBar"></div></div>
+            </div>
+            <div class="card">
+              <div class="card__k">温度</div>
+              <div class="card__v"><span id="tempC">--</span> <span class="u">°C</span></div>
+              <div class="card__s">平均温度</div>
+            </div>
+            <div class="card">
+              <div class="card__k">告警</div>
+              <div class="card__v"><span id="alarmTotal">--</span></div>
+              <div class="card__s">
+                <span class="tag tag--crit">C <span id="alarmCrit">--</span></span
+                ><span class="tag tag--warn">W <span id="alarmWarn">--</span></span
+                ><span class="tag tag--info">I <span id="alarmInfo">--</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="split">
+            <div class="mini">
+              <div class="mini__title">趋势（最近 30 点）</div>
+              <div class="sparks">
+                <div class="spark">
+                  <div class="spark__title">功率 kW</div>
+                  <svg class="spark__svg" viewBox="0 0 240 64">
+                    <polyline id="sparkPower" fill="none" />
+                  </svg>
+                </div>
+                <div class="spark">
+                  <div class="spark__title">电压 V</div>
+                  <svg class="spark__svg" viewBox="0 0 240 64">
+                    <polyline id="sparkVoltage" fill="none" />
+                  </svg>
+                </div>
+                <div class="spark">
+                  <div class="spark__title">电流 A</div>
+                  <svg class="spark__svg" viewBox="0 0 240 64">
+                    <polyline id="sparkCurrent" fill="none" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="mini">
+              <div class="mini__head">
+                <div class="mini__title">最新告警列表</div>
+                <select class="select" id="alarmSort" aria-label="告警排序">
+                  <option value="time" selected>按时间</option>
+                  <option value="severity">按危急程度</option>
+                </select>
+              </div>
+              <div class="alarms" id="alarmList"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel--solid">
+          <div class="panel__head">
+            <div>
+              <div class="panel__title">远端控制</div>
+              <div class="panel__sub">
+                写入 /api/control-commands（SQLite 持久化），就地页面将自动同步
+              </div>
+            </div>
+            <div class="chip chip--ok" id="cmdSyncChip">READY</div>
+          </div>
+
+          <div class="control">
+            <div class="mode">
+              <div class="mode__title">控制模式</div>
+              <div class="mode__grid">
+                <label class="radio">
+                  <input type="checkbox" id="agcEnabled" />
+                  <span>AGC（功率）</span>
+                </label>
+                <label class="radio">
+                  <input type="checkbox" id="avcEnabled" />
+                  <span>AVC（电压）</span>
+                </label>
+                <label class="radio">
+                  <input type="checkbox" id="manualEnabled" />
+                  <span>手动功率</span>
+                </label>
+                <button class="btn btn--ghost" id="allOffBtn" type="button">全部关闭</button>
+              </div>
+            </div>
+
+            <div class="form">
+              <div class="group">
+                <div class="group__title">AGC 参数</div>
+                <div class="row">
+                  <div class="field">
+                    <div class="field__k">目标功率 (kW)</div>
+                    <input id="agcTarget" type="number" step="10" min="-600" max="600" />
+                  </div>
+                  <div class="field">
+                    <div class="field__k">爬坡率 (kW/min)</div>
+                    <input id="agcRamp" type="number" step="1" min="1" max="100" />
+                  </div>
+                  <div class="field">
+                    <div class="field__k">死区 (kW)</div>
+                    <input id="agcDeadband" type="number" step="1" min="0" max="50" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="group">
+                <div class="group__title">AVC 参数</div>
+                <div class="row">
+                  <div class="field">
+                    <div class="field__k">目标电压 (V)</div>
+                    <input id="avcTarget" type="number" step="1" min="300" max="500" />
+                  </div>
+                  <div class="field">
+                    <div class="field__k">电压范围 Min (V)</div>
+                    <input id="avcMin" type="number" step="1" min="300" max="450" />
+                  </div>
+                  <div class="field">
+                    <div class="field__k">电压范围 Max (V)</div>
+                    <input id="avcMax" type="number" step="1" min="350" max="500" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="group">
+                <div class="group__title">手动功率</div>
+                <div class="row">
+                  <div class="field field--wide">
+                    <div class="field__k">目标功率 (kW)</div>
+                    <input id="manualTarget" type="range" min="-600" max="600" step="10" />
+                    <div class="sliderMeta">
+                      <span class="sliderMeta__v" id="manualTargetLabel">--</span>
+                      <div class="quick">
+                        <button class="btn btn--ghost" data-quick="0">待机</button>
+                        <button class="btn btn--ghost" data-quick="200">200</button>
+                        <button class="btn btn--ghost" data-quick="400">400</button>
+                        <button class="btn btn--ghost" data-quick="600">600</button>
+                        <button class="btn btn--ghost" data-quick="-200">-200</button>
+                        <button class="btn btn--ghost" data-quick="-400">-400</button>
+                        <button class="btn btn--ghost" data-quick="-600">-600</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn" id="applyBtn">下发控制</button>
+                <button class="btn btn--ghost" id="reloadBtn">重新读取</button>
+              </div>
+
+              <div class="note" id="applyNote"></div>
+
+              <div class="group">
+                <div class="group__title">控制下发历史</div>
+                <div class="actions actions--tight">
+                  <button class="btn btn--ghost" id="logReloadBtn" type="button">刷新日志</button>
+                </div>
+                <div class="logs" id="logList"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div>
+          提示：请先启动后端 <code>npm run server</code>（或 <code>npm run dev:full</code>）。
+        </div>
+        <div>
+          远端页面入口：<code>/remote</code>（例如 <code>http://localhost:3001/remote</code>）
+        </div>
+      </footer>
+    </div>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>远端控制台登录</title>
+    <link rel="stylesheet" href="./login.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <div class="brand">
+          <div class="brand__title">远端服务器控制台</div>
+          <div class="brand__sub">请登录后下发 AGC/AVC/手动功率指令</div>
+        </div>
+
+        <form id="loginForm" class="form">
+          <div class="field">
+            <div class="field__k">账号</div>
+            <input id="username" name="username" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <div class="field__k">密码</div>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+
+          <button class="btn" type="submit" id="loginBtn">登录</button>
+          <div class="note" id="note"></div>
+
+          <div class="hint">
+            默认账号密码可由后端环境变量配置：
+            <code>REMOTE_CONSOLE_USER</code> / <code>REMOTE_CONSOLE_PASS</code>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="./login.js" type="module"></script>
+  </body>
+</html>
